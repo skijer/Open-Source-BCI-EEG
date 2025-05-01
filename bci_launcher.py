@@ -1,87 +1,86 @@
-# bci_launcher.py
-import sys, json
+import sys
 from PyQt5 import QtWidgets, QtCore
-import styles
-import utils.config_manager as cfg
-import utils.serial_backend   as sb
+import styles, utils.serial_backend as sb
+from utils.theme_manager import ThemeManager
+from utils.ui_helpers   import nav_bar
 from bci_trainer.main_trainer import TrainerWindow
 from bci_monitor.main_monitor import MonitorWindow
+from utils.OrloskyPupilDetectorRaspberryPi4BCI import CameraWidget
 
+_tm = ThemeManager.instance()
+
+# ─────────────────────────────────────────────────────── main menu
 class MainMenu(QtWidgets.QWidget):
     def __init__(self, launcher):
         super().__init__()
-        self.launcher = launcher
-        self.setAutoFillBackground(True)
-        pal = self.palette()
-        pal.setColor(self.backgroundRole(), QtCore.Qt.black)
-        self.setPalette(pal)
-
         v = QtWidgets.QVBoxLayout(self)
+        v.addWidget(
+            nav_bar(self,
+                    QtWidgets.QApplication.quit,
+                    lambda: QtWidgets.QMessageBox.information(self, "Launcher", "No settings here"),
+                    first_icon="icons/close.svg", first_tooltip="Exit",
+                    on_reconnect=launcher.reconnect_serial),
+            alignment=QtCore.Qt.AlignTop)
+
         v.addStretch()
-        btn_style = """
-            QPushButton {
-                font-size: 24px;
-                color: white;
-                background: #00d8ff;
-                border-radius: 8px;
-                min-height: 60px;
-            }
-            QPushButton:hover { background: #ff9a00; }
-        """
-        b1 = QtWidgets.QPushButton("▶️  Trainer")
-        b1.setStyleSheet(btn_style)
-        b1.clicked.connect(lambda: launcher.stack.setCurrentIndex(1))
-        b2 = QtWidgets.QPushButton("▶️  Monitor")
-        b2.setStyleSheet(btn_style)
-        b2.clicked.connect(lambda: launcher.stack.setCurrentIndex(2))
-        v.addWidget(b1)
-        v.addWidget(b2)
+        btn_css = ("QPushButton {font-size:24px; color:%s; background:%s; "
+                   "border-radius:8px; min-height:60px;} "
+                   "QPushButton:hover {background:%s;}" %
+                   (styles.BG_DARK, styles.NEON_BLUE, styles.NEON_ORANGE))
+        for text, idx in [("▶️ Trainer", 1), ("▶️ Monitor", 2), ("▶️ Eye Tracker", 3)]:
+            b = QtWidgets.QPushButton(text); b.setStyleSheet(btn_css)
+            b.clicked.connect(lambda _, i=idx: launcher.stack.setCurrentIndex(i))
+            v.addWidget(b)
         v.addStretch()
 
+# ─────────────────────────────────────────────────────── launcher
 class Launcher(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("BCI Launcher")
-        self.resize(800, 600)
+        self.setWindowTitle("BCI Launcher"); self.resize(800, 600)
+        self._open_serial(initial=True)
 
-        # — open serial once —
+        self.stack   = QtWidgets.QStackedWidget()
+        self.menu    = MainMenu(self)
+        self.trainer = TrainerWindow(self, self.serial)
+        self.monitor = MonitorWindow(self, self.serial)
+        self.camera  = CameraWidget(self)
+        for w in (self.menu, self.trainer, self.monitor, self.camera):
+            self.stack.addWidget(w)
+        self.setCentralWidget(self.stack); self.stack.setCurrentIndex(0)
+
+    # ------------------- serial open helper -------------------------
+    def _open_serial(self, initial=False):
         port = sb.find_usb()
         if port:
-            self.serial = sb.SerialThread(port)
-            self.serial.start()
+            ser = sb.SerialThread(port)        # port opened inside __init__
+            if ser.ok:
+                ser.start()
+                QtWidgets.QMessageBox.information(self, "Serial",
+                                                  f"Connected to {port}")
+            else:
+                QtWidgets.QMessageBox.critical(self, "Serial",
+                                               f"Failed to open {port}")
+                ser = sb.DummySerial()
         else:
-            QtWidgets.QMessageBox.critical(self, "Error", "No USB port found")
-            self.serial = sb.DummySerial()
+            if initial:
+                QtWidgets.QMessageBox.warning(self, "Serial",
+                                              "No USB device found – using dummy EEG")
+            ser = sb.DummySerial()
+        self.serial = ser
 
-        # — stack of scenes —
-        self.stack = QtWidgets.QStackedWidget()
-        self.setCentralWidget(self.stack)
+    # ------------------- reconnect slot -----------------------------
+    def reconnect_serial(self):
+        if isinstance(self.serial, sb.SerialThread) and self.serial.ok:
+            QtWidgets.QMessageBox.information(self, "Serial", "Already connected.")
+            return
+        if isinstance(self.serial, sb.SerialThread):
+            self.serial.stop()
+        self._open_serial()
+        for w in (self.trainer, self.monitor):
+            w.set_serial(self.serial)
 
-        self.menu    = MainMenu(self)
-        self.trainer = TrainerWindow(launcher=self, serial=self.serial)
-        self.monitor = MonitorWindow(launcher=self, serial=self.serial)
-
-        self.stack.addWidget(self.menu)    # index 0
-        self.stack.addWidget(self.trainer) # index 1
-        self.stack.addWidget(self.monitor) # index 2
-
-        self.apply_theme()
-        self.stack.setCurrentIndex(0)
-
-    def open_settings(self):
-        dlg = self.trainer.ConfigDialog(self)
-        if dlg.exec_():
-            newcfg = json.load(open("config.json"))
-            cfg.reload(newcfg)
-            # update intervals
-            self.trainer._timer.setInterval(cfg.get("UPDATE_INTERVAL"))
-            self.monitor._timer.setInterval(cfg.get("UPDATE_INTERVAL"))
-
-    def apply_theme(self):
-        self.setStyleSheet(styles.DARK)
-
+# ─────────────────────────────────────────────────────── entry point
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    w = Launcher()
-    w.show()
-    sys.exit(app.exec_())
+    Launcher().show(); sys.exit(app.exec_())

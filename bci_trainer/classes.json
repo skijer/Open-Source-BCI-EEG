@@ -1,18 +1,10 @@
 [
     {
-        "name": "descanso",
+        "name": "basal",
         "duration": 1.0
     },
     {
-        "name": "activo",
-        "duration": 1.0
-    },
-    {
-        "name": "golpe derecho",
-        "duration": 1.0
-    },
-    {
-        "name": "pie derecho",
+        "name": "SSVEP",
         "duration": 1.0
     }
 ]
