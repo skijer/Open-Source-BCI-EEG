@@ -22,7 +22,7 @@ class ConfigDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent); self.setWindowTitle("Monitor Settings")
         form = QtWidgets.QFormLayout(self); self.fields = {}
-        try: settings = json.load(open("config.json"))
+        try: settings = json.load(open("utils/config.json"))
         except Exception: settings = {}
         for k, v in settings.items():
             e = QtWidgets.QLineEdit(str(v)); self.fields[k] = e; form.addRow(k, e)
@@ -36,7 +36,7 @@ class ConfigDialog(QtWidgets.QDialog):
         for k, e in self.fields.items():
             t = e.text().strip()
             new[k] = int(t) if t.isdigit() else float(t) if "." in t else t
-        json.dump(new, open("config.json", "w"), indent=2); cfg.reload(new)
+        json.dump(new, open("utils/config.json", "w"), indent=2); cfg.reload(new)
         super().accept()
 
 # ────────────────────────────────────────────────────────── main window

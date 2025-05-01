@@ -59,7 +59,7 @@ class EyeConfigDialog(QtWidgets.QDialog):
         self.setWindowTitle("Eye-tracker settings")
 
         try:
-            cfg = json.load(open("eye_config.json"))
+            cfg = json.load(open("utils/eye_config.json"))
         except Exception:
             cfg = {}
         cx, cy = (cfg.get("calibrated_center") or [None, None])
@@ -92,7 +92,7 @@ class EyeConfigDialog(QtWidgets.QDialog):
         self.result = {"calibrated_center": [cx, cy],
                        "sensitivity_x": sx,
                        "sensitivity_y": sy}
-        json.dump(self.result, open("eye_config.json", "w"), indent=2)
+        json.dump(self.result, open("utils/eye_config.json", "w"), indent=2)
         super().accept()
 
 # ────────────────────────────────────────────────────────── main widget
@@ -180,7 +180,7 @@ class CameraWidget(QtWidgets.QWidget):
             json.dump({"calibrated_center": list(self.calibrated_center) if self.calibrated_center else [None, None],
                        "sensitivity_x": self.sensitivity_x,
                        "sensitivity_y": self.sensitivity_y},
-                      open("eye_config.json", "w"), indent=2)
+                      open("utils/eye_config.json", "w"), indent=2)
 
         if self.timer.isActive(): self.timer.stop()
         if self.cap: self.cap.release()

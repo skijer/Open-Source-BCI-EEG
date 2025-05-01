@@ -17,7 +17,7 @@ class ConfigDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent); self.setWindowTitle("Trainer Settings")
         form = QtWidgets.QFormLayout(self); self.fields = {}
-        try: settings = json.load(open("config.json"))
+        try: settings = json.load(open("utils/config.json"))
         except Exception: settings = {}
         for k, v in settings.items():
             e = QtWidgets.QLineEdit(str(v)); self.fields[k] = e; form.addRow(k, e)

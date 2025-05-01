@@ -1,5 +1,7 @@
 # bci_trainer/panels/ai_training_widget.py
-import os, json, numpy as np
+import os
+import json
+import numpy as np
 from PyQt5 import QtWidgets, QtCore
 from tensorflow.keras.utils import to_categorical          # type: ignore
 from sklearn.model_selection import GroupShuffleSplit
@@ -12,10 +14,10 @@ import utils.EEGModels  as EEGModels
 
 class AITrainingWidget(QtWidgets.QWidget):
     """
-    Entrena EEGNet y guarda:
-      • best_model_LR.keras      – mejor val_loss
-      • eegnet_final_LR.keras    – última época
-      • preproc_metadata.npz     – scaler + mapping + dims (para inferencia)
+    Entrena EEGNet y guarda en "models/<run_name>/":
+      • best_model.keras        – mejor val_loss
+      • final_model.keras       – última época
+      • preproc_metadata.npz    – scaler + mapping + dims (para inferencia)
     """
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -27,6 +29,7 @@ class AITrainingWidget(QtWidgets.QWidget):
     def _build_ui(self):
         lay = QtWidgets.QVBoxLayout(self)
 
+        # ------------- file loader
         self.btn_load = QtWidgets.QPushButton("Load Recordings")
         self.btn_load.clicked.connect(self._load_files)
         lay.addWidget(self.btn_load)
@@ -34,6 +37,24 @@ class AITrainingWidget(QtWidgets.QWidget):
         self.lst_files = QtWidgets.QListWidget()
         lay.addWidget(self.lst_files)
 
+        # ------------- preset hyper‑params
+        grid = QtWidgets.QGridLayout()
+        self.btn_soft_short = QtWidgets.QPushButton("Soft Short")   # 32 × 100
+        self.btn_soft_long  = QtWidgets.QPushButton("Soft Long")    # 32 × 300
+        self.btn_hard_short = QtWidgets.QPushButton("Hard Short")   # 64 × 100
+        self.btn_hard_long  = QtWidgets.QPushButton("Hard Long")    # 64 × 300
+        grid.addWidget(self.btn_soft_short, 0, 0)
+        grid.addWidget(self.btn_soft_long,  0, 1)
+        grid.addWidget(self.btn_hard_short, 0, 2)
+        grid.addWidget(self.btn_hard_long,  0, 3)
+        lay.addLayout(grid)
+
+        self.btn_soft_short.clicked.connect(lambda: self._set_params(32, 100))
+        self.btn_soft_long .clicked.connect(lambda: self._set_params(32, 300))
+        self.btn_hard_short.clicked.connect(lambda: self._set_params(64, 100))
+        self.btn_hard_long .clicked.connect(lambda: self._set_params(64, 300))
+
+        # ------------- manual hyper‑params
         form = QtWidgets.QFormLayout()
         self.edt_batch  = QtWidgets.QLineEdit("32")
         self.edt_epochs = QtWidgets.QLineEdit("600")
@@ -41,14 +62,21 @@ class AITrainingWidget(QtWidgets.QWidget):
         form.addRow("Epochs",     self.edt_epochs)
         lay.addLayout(form)
 
+        # ------------- train trigger
         self.btn_train = QtWidgets.QPushButton("Start Training")
         self.btn_train.clicked.connect(self._train)
         lay.addWidget(self.btn_train)
 
+        # ------------- log box
         self.txt_log = QtWidgets.QTextEdit(readOnly=True)
         lay.addWidget(self.txt_log)
 
     # ------------------------------------------------------------------ helpers
+    def _set_params(self, batch: int, epochs: int):
+        """Update the batch/epochs edits without launching training."""
+        self.edt_batch.setText(str(batch))
+        self.edt_epochs.setText(str(epochs))
+
     def _log(self, msg: str):
         self.txt_log.append(msg)
         QtCore.QCoreApplication.processEvents()
@@ -68,6 +96,15 @@ class AITrainingWidget(QtWidgets.QWidget):
         if not self.files:
             QtWidgets.QMessageBox.warning(self, "No files", "Load recordings first")
             return
+
+        # Ask for run name
+        run_name, ok = QtWidgets.QInputDialog.getText(
+            self, "Folder name", "Enter a name for this training run:")
+        if not ok or not run_name.strip():
+            return
+        run_name = run_name.strip()
+        save_dir = os.path.join("models", run_name)
+        os.makedirs(save_dir, exist_ok=True)
 
         X, y, groups = [], [], []   # groups → filename to avoid leakage
         label_ctr = 0
@@ -120,12 +157,13 @@ class AITrainingWidget(QtWidgets.QWidget):
         X_test    = X_test2d.reshape(X_test.shape[0], ch, smp, 1)
 
         # save scaler + mapping
-        np.savez("preproc_metadata.npz",
+        np.savez(os.path.join(save_dir, "preproc_metadata.npz"),
                  mean=scaler.mean_, scale=scaler.scale_,
                  classes=self.class_mapping, chans=ch, samples=smp)
 
         self._log(f"Train={X_train.shape}  Test={X_test.shape}")
         self._log(f"Classes: {self.class_mapping}")
+        self._log(f"Saving models to: {save_dir}")
 
         # ---------------------------------------------------------------- model
         try:
@@ -142,7 +180,7 @@ class AITrainingWidget(QtWidgets.QWidget):
         cbs = [
             ReduceLROnPlateau(monitor="val_loss", factor=.5, patience=10, verbose=1),
             EarlyStopping(monitor="val_loss", patience=30, restore_best_weights=True, verbose=1),
-            ModelCheckpoint("best_model_LR.keras", monitor="val_loss",
+            ModelCheckpoint(os.path.join(save_dir, "best_model.keras"), monitor="val_loss",
                             save_best_only=True, verbose=1)
         ]
         self._log("Training …")
@@ -150,6 +188,6 @@ class AITrainingWidget(QtWidgets.QWidget):
                          epochs=ep, batch_size=bs, callbacks=cbs, verbose=1)
 
         loss, acc = model.evaluate(X_test, y_test, verbose=0)
-        self._log(f"Final – loss {loss:.4f}  acc {acc*100:.2f}%")
-        model.save("eegnet_final_LR.keras")
-        self._log("Saved: eegnet_final_LR.keras")
+        self._log(f"Final – loss {loss:.4f}  acc {acc*100:.2f}%)")
+        model.save(os.path.join(save_dir, "final_model.keras"))
+        self._log("Saved: final_model.keras")
