@@ -140,22 +140,28 @@ class PlotPanel(QtWidgets.QWidget):
 
     # ─── FFT / Spectrum ─────────────────────────────────────────────
     def _spectrum(self):
-        x, d = self.serial.get_fft_data()
-        fs = cfg.get("SAMPLE_RATE")
+        nfft = cfg.get("FFT_LENGTH")
+        _, d = self.serial.get_fft_data(length=nfft)
         if d.size == 0:
             return
+
+        fs = cfg.get("SAMPLE_RATE")
+        freqs = np.fft.rfftfreq(nfft, 1/fs)
+        fmin = cfg.get("FFT_FREQ_MIN")
+        fmax = cfg.get("FFT_FREQ_MAX")
+        mask = (freqs >= fmin) & (freqs <= fmax)
+
         self.pw.clear()
-        self.curves = []
-        for col in CHANNEL_COLORS:
-            self.curves.append(self.pw.plot(pen=col))
+        self.curves = [self.pw.plot(pen=col) for col in CHANNEL_COLORS]
+
         act = self._actives()
         for i in act:
-            sig   = d[i]
-            fft   = np.abs(np.fft.rfft(sig))
-            freqs = np.fft.rfftfreq(len(sig), 1/fs)
-            mask  = (freqs >= 3) & (freqs <= 50)
+            sig = d[i]
+            fft = np.abs(np.fft.rfft(sig, n=nfft))
             self.curves[i].setData(freqs[mask], fft[mask])
 
+        self.pw.setXRange(fmin, fmax)
+        
     # ─── 8 gráficas ────────────────────────────────────────────────
     def _eight(self):
         x, d = self.serial.get_plot_data()

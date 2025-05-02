@@ -4,17 +4,19 @@ from typing import Any, Dict
 CONFIG_FILE = pathlib.Path(__file__).with_name("config.json")
 
 DEFAULTS: Dict[str, Any] = {
-    "DATA_LENGTH":     30000,
-    "PLOT_LENGTH":      2000,
-    "FFT_LENGTH":       1024,
-    "UPDATE_INTERVAL":    40,
-    "SAMPLE_RATE":       500,
-    "NOTCH_FREQ":        60.0,
-    "QUALITY_FACTOR":    30,
-    "FILTER_CUTOFF":     40.0,
-    "BUTTER_ORDER":      4,
-    "BUTTER_CUTOFF":     40.0,
-    "RECORD_LENGTH":     5
+  "DATA_LENGTH":    30000,
+  "PLOT_LENGTH":    2000,
+  "FFT_LENGTH":     120,
+  "FFT_FREQ_MIN":   3.0,
+  "FFT_FREQ_MAX":   50.0,
+  "UPDATE_INTERVAL":40,
+  "SAMPLE_RATE":    500,
+  "NOTCH_FREQ":     60.0,
+  "QUALITY_FACTOR": 30,
+  "BANDPASS_LO":    4.0,
+  "BANDPASS_HI":    60.0,
+  "BUTTER_ORDER":   4,
+  "RECORD_LENGTH":  5
 }
 
 def _read() -> Dict[str, Any]:

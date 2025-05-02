@@ -338,8 +338,8 @@ class EEGRecorderWidget(QtWidgets.QWidget):
                 duration=self.class_info['duration'],
                 recordings=np.array(self.recordings),  # (repeticiones, 8 canales, muestras)
                 notch_freq=cfg.get("NOTCH_FREQ"),
-                filter_cutoff=cfg.get("FILTER_CUTOFF"),
-                butter_cutoff=cfg.get("BUTTER_CUTOFF")
+                filter_start=cfg.get("BANDPASS_LO"),
+                filter_end=cfg.get("BANDPASS_HI")
             )
             self.status_label.setText(f"Recordings saved to {filename}")
             QtWidgets.QMessageBox.information(self, "Saved", f"Recordings saved to {filename}")
