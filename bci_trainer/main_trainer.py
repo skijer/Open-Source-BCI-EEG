@@ -32,7 +32,7 @@ class ConfigDialog(QtWidgets.QDialog):
         for k, e in self.fields.items():
             t = e.text().strip()
             new[k] = int(t) if t.isdigit() else float(t) if "." in t else t
-        json.dump(new, open("config.json", "w"), indent=2); cfg.reload(new)
+        json.dump(new, open("utils/config.json", "w"), indent=2); cfg.reload(new)
         super().accept()
 
 # ────────────────────────────────────────────────────────── main window
