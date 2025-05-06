@@ -8,3 +8,4 @@ tensorflow
 scikit-learn
 opencv-python
 pyautogui
+keyboard

@@ -32,7 +32,7 @@ class ConfigDialog(QtWidgets.QDialog):
         for k, e in self.fields.items():
             t = e.text().strip()
             new[k] = int(t) if t.isdigit() else float(t) if "." in t else t
-        json.dump(new, open("utils/config.json", "w"), indent=2); cfg.reload(new)
+        json.dump(new, open("config.json", "w"), indent=2); cfg.reload(new)
         super().accept()
 
 # ────────────────────────────────────────────────────────── main window
@@ -82,6 +82,8 @@ class TrainerWindow(QtWidgets.QMainWindow):
     def _on_tab_change(self, idx):
         if self.tabs.widget(idx) is self.recorder:
             self.recorder.load_classes_from_file()
+        if self.tabs.widget(idx) is self.infer:
+            self.infer._on_folder_changed()
 
     def _start_timer(self):
         self._timer = QtCore.QTimer(self)

@@ -1,0 +1,45 @@
+{
+  "phone_commands": [
+    "f", "FLY",
+    "e", "EXPLODE",
+    "s", "SCALE",
+    "c", "COLOR",
+    "g", "TOGGLE_GRAV",
+    "t", "TELEPORT",
+    "d", "DANCE"
+  ],
+  "WASD_UJHK_commands": [
+    "w", "UP",
+    "a", "LEFT",
+    "s", "DOWN",
+    "d", "RIGHT",
+    "u", "D-UP",
+    "j", "D-DOWN",
+    "h", "D-LEFT",
+    "k", "D-RIGHT"
+  ],
+  "ARROW_commands": [
+    "ArrowUp",    "UP",
+    "ArrowDown",  "DOWN",
+    "ArrowLeft",  "LEFT",
+    "ArrowRight", "RIGHT"
+  ],
+  "NUMPAD_commands": [
+    "1", "NUMPAD1",
+    "2", "NUMPAD2",
+    "3", "NUMPAD3",
+    "4", "NUMPAD4",
+    "5", "NUMPAD5",
+    "6", "NUMPAD6",
+    "7", "NUMPAD7",
+    "8", "NUMPAD8",
+    "9", "NUMPAD9"
+  ],
+  "FUNCTION_commands": [
+    "F1", "F1_CMD",
+    "F2", "F2_CMD",
+    "F3", "F3_CMD",
+    "F4", "F4_CMD",
+    "F5", "F5_CMD"
+  ]
+}
