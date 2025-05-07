@@ -9,3 +9,5 @@ scikit-learn
 opencv-python
 pyautogui
 keyboard
+PyOpenGL
+pyvjoy

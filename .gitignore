@@ -1,0 +1,15 @@
+install.bat
+/MakeApp
+__pycache__/styles.cpython-311.pyc
+bci_monitor/__pycache__/__init__.cpython-311.pyc
+bci_monitor/__pycache__/main_monitor.cpython-311.pyc
+bci_trainer/__pycache__/__init__.cpython-311.pyc
+bci_trainer/__pycache__/main_trainer.cpython-311.pyc
+utils/__pycache__/__init__.cpython-311.pyc
+utils/__pycache__/config_manager.cpython-311.pyc
+utils/__pycache__/EEGModels.cpython-311.pyc
+utils/__pycache__/OrloskyPupilDetectorRaspberryPi4BCI.cpython-311.pyc
+utils/__pycache__/serial_backend.cpython-311.pyc
+utils/__pycache__/theme_manager.cpython-311.pyc
+utils/__pycache__/ui_helpers.cpython-311.pyc
+utils/__pycache__/control_panel_widget.cpython-311.pyc

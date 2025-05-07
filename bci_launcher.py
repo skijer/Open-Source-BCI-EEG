@@ -9,7 +9,7 @@ from utils.theme_manager import ThemeManager
 from utils.ui_helpers   import nav_bar
 from bci_trainer.main_trainer       import TrainerWindow
 from bci_monitor.main_monitor       import MonitorWindow
-from utils.OrloskyPupilDetectorRaspberryPi4BCI import CameraWidget
+from utils.camera_widget import CameraWidget
 from utils.control_panel_widget     import ControlPanelWidget
 
 _tm = ThemeManager.instance()
