@@ -5,7 +5,6 @@ import os, json, time, socket, threading, numpy as np, cv2
 from PyQt5 import QtCore, QtWidgets
 from utils.ui_helpers    import nav_bar
 from utils.theme_manager import ThemeManager
-from utils.camera_widget import CameraWorker, _load_cfg, _send_input     # reuse!
 # ---------------------------------------------------------------------
 try:
     import pyvjoy
@@ -58,8 +57,6 @@ class InferenceWorker(QtCore.QThread):
             hist.append(cls)
             if len(hist) >= self.repeat and all(h==cls for h in hist[-self.repeat:]):
                 act = self.map.get(cls)
-                if act:
-                    _send_input(act, self.vj)
             if len(hist) > self.repeat: hist.pop(0)
             time.sleep(0.15)
 
@@ -124,16 +121,6 @@ class ControlPanelWidget(QtWidgets.QWidget):
         lay.addWidget(self.btn_map_inf,3,1); lay.addWidget(self.lb_map_inf,3,2)
         main.addWidget(gb)
 
-        # Camera --------------------------------------------------------
-        gb = QtWidgets.QGroupBox("Camera Position"); lay = QtWidgets.QGridLayout(gb)
-        self.cb_cam = QtWidgets.QCheckBox("Enable camera")
-        self.cmb_cam = QtWidgets.QComboBox(); self._scan_cams()
-        self.btn_map_cam = QtWidgets.QPushButton("Configure mapping…", clicked=self._map_cam)
-        self.lb_map_cam  = QtWidgets.QLabel("Mapped: –")
-        lay.addWidget(self.cb_cam,0,0,1,2)
-        lay.addWidget(QtWidgets.QLabel("Port:"),1,0); lay.addWidget(self.cmb_cam,1,1)
-        lay.addWidget(self.btn_map_cam,2,0); lay.addWidget(self.lb_map_cam,2,1)
-        main.addWidget(gb)
 
         # UTP -----------------------------------------------------------
         gb = QtWidgets.QGroupBox("UTP Connection"); lay = QtWidgets.QGridLayout(gb)
@@ -158,13 +145,6 @@ class ControlPanelWidget(QtWidgets.QWidget):
             for d in sorted(os.listdir("models")):
                 if os.path.isdir(os.path.join("models",d)): self.cmb_models.addItem(d)
 
-    def _scan_cams(self):
-        self.cmb_cam.clear()
-        for i in range(5):
-            cap=cv2.VideoCapture(i); ok,_=cap.read(); cap.release()
-            if ok: self.cmb_cam.addItem(f"Camera {i}", i)
-        if not self.cmb_cam.count(): self.cmb_cam.addItem("No camera",-1)
-
     # ─────────────── mapping dialogs (unchanged visual) ──────────────
     def _map_inf(self):
         sel = self.cmb_models.currentText()
@@ -176,17 +156,6 @@ class ControlPanelWidget(QtWidgets.QWidget):
         self.lb_map_inf.setText("Mapped: " + (" | ".join(f"{k}->{v}" for k,v in self.inf_map.items()) or "–"))
         if sel: json.dump(self.inf_map, open(os.path.join("models",sel,"action_map.json"),"w"), indent=2)
 
-    def _map_cam(self):
-        dirs = ["up","down","left","right","adelante","atras"]
-        tmp  = {tuple([d]):v for d,v in self.cam_map.items()}
-        res  = _mapping_dialog(self, dirs, tmp, title="Map camera dirs → actions")
-        self.cam_map = res
-        self.lb_map_cam.setText(
-            "Mapped: " + (
-                " | ".join(f"{'+'.join(k)}->{v}" for k, v in self.cam_map.items())
-                or "–"
-            )
-        )
 
     # ─────────────── run / stop all threads ───────────────────────────
     def _toggle(self):
@@ -205,14 +174,6 @@ class ControlPanelWidget(QtWidgets.QWidget):
                                               self.sp_thr.value(),
                                               self.inf_map)
             self.inf_worker.start()
-
-        # ---- START CAMERA -------------------------------------------
-        if self.cb_cam.isChecked() and self.cmb_cam.currentData() != -1:
-            self.cam_worker = CameraWorker(self.cmb_cam.currentData(),
-                                           self.cam_map,
-                                           _load_cfg())
-            self.cam_worker.start()
-
         # ---- START UTP ----------------------------------------------
         if self.cb_utp.isChecked():
             self.utp_worker = UtpWorker(self.ip.text().strip(),
