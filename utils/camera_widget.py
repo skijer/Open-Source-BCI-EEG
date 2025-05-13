@@ -125,8 +125,10 @@ class CameraWidget(QtWidgets.QWidget):
         for obs in (obs_x, obs_y, obs_z):
             key = DIR_TO_KEY.get(obs)
             if key:
-                pyautogui.press(key)
-                fired.append(key.upper())
+                try:
+                    pyautogui.press(key)
+                    fired.append(key.upper())
+                except: pass
 
         # UI / logging
         self.lbl.setText(f"Obs: {obs_x.capitalize()}, {obs_y.capitalize()}, {obs_z.capitalize()}")
